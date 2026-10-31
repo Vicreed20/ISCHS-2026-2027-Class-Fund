@@ -57,7 +57,7 @@
 
         showMessage("Welcome back! Redirecting...", "success");
         setTimeout(() => {
-            location.href = body.user.role === "admin" ? "/admin.html" : "/Index.html";
+            location.href = body.user.role === "admin" ? "/admin.html" : "/index.html";
         }, 600);
     } catch (err) {
         button.classList.remove("loading");

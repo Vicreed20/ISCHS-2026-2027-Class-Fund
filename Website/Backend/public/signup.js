@@ -103,7 +103,7 @@ form.addEventListener("submit", async e => {
         if (!res.ok) throw new Error(body.error || "Could not create your account.");
 
         showMessage("Account created! Redirecting...", "success");
-        setTimeout(() => { location.href = "/Index.html"; }, 800);
+        setTimeout(() => { location.href = "/index.html"; }, 800);
     } catch (err) {
         button.classList.remove("loading");
         button.disabled = false;

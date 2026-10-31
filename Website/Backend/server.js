@@ -64,7 +64,7 @@ app.get("/admin.html", (req, res) => {
 });
 
 app.use(express.static(PUBLIC));
-app.get("/", (req, res) => res.sendFile(path.join(PUBLIC, "Index.html")));
+app.get("/", (req, res) => res.sendFile(path.join(PUBLIC, "index.html")));
 
 // Error handler
 app.use((err, req, res, next) => {
