@@ -78,19 +78,17 @@ document.addEventListener("click", e => {
 const money = n => (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 function preview() {
-  const { raised, goal, donors } = data.funds;
+  const { raised, goal } = data.funds;
   const pct = goal > 0 ? Math.min(100, Math.round(raised / goal * 100)) : 0;
   $("pv-bar").style.width = pct + "%";
   $("pv-pct").firstChild.textContent = pct + "%";
   $("pv-left").firstChild.textContent = money(Math.max(0, goal - raised));
-  $("pv-avg").firstChild.textContent = money(donors > 0 ? raised / donors : 0);
 }
 
-["raised", "goal", "donors"].forEach(k => {
+["raised", "goal" ].forEach(k => {
   $(k).addEventListener("input", e => {
     if (!data) return;
     let v = Math.max(0, Number(e.target.value) || 0);
-    if (k === "donors") v = Math.floor(v);
     data.funds[k] = v;
     setDirty(true);
     preview();
@@ -262,7 +260,7 @@ $("add-faq").addEventListener("click", () => {
 
 /* ---------- Fill the page from `data` ---------- */
 function populate() {
-  ["raised", "goal", "donors"].forEach(k => $(k).value = data.funds[k]);
+  ["raised", "goal"].forEach(k => $(k).value = data.funds[k]);
   $("updated").value = data.funds.updated || "";
   CONTACT_FIELDS.forEach(([id, key]) => $(id).value = data.contact[key] || "");
   preview();

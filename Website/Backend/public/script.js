@@ -4,7 +4,6 @@
 const FUNDS = {
    raised: 18500,
    goal: 25000,
-   donors: 112,
    updated: "October 20, 2026"
 };
 
@@ -34,8 +33,6 @@ function fillFunds() {
    $("goal-text").textContent = money(FUNDS.goal);
    $("stat-current").textContent = money(FUNDS.raised);
    $("stat-remaining").textContent = money(Math.max(0, FUNDS.goal - FUNDS.raised));
-   $("stat-donors").textContent = FUNDS.donors;
-   $("stat-average").textContent = money(FUNDS.donors > 0 ? Math.round(FUNDS.raised / FUNDS.donors) : 0);
    $("updated-text").textContent = prettyDate(FUNDS.updated);
 
    // If the box is already open when new numbers arrive, refresh what's showing
