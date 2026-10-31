@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel | ISCHS Senior Funds</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header>
+   <h1>ISCHS Admin Panel</h1>
+  <div class="head-right">
+    <span id="who"></span>
+    <span id="status">All changes saved</span>
+    <button class="btn btn-small" id="logout" type="button">Log out</button>
+    <button class="btn btn-save" id="save">Save changes</button>
+  </div>
+</header>
+<main class="layout">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="funds" aria-selected="true">Funds</button>
+    <button class="tab" role="tab" data-tab="events" aria-selected="false">Events</button>
+    <button class="tab" role="tab" data-tab="contact" aria-selected="false">Contact</button>
+    <button class="tab" role="tab" data-tab="faq" aria-selected="false">FAQ</button>
+  </div>
+
+  <section class="panel" id="panel-funds" role="tabpanel">
+    <h2>Funds</h2>
+    <p class="hint">These numbers appear in the reveal box on the homepage.</p>
+    <div class="grid">
+      <label class="f">Amount raised ($)<input type="number" min="0" id="raised"></label>
+      <label class="f">Goal ($)<input type="number" min="1" id="goal"></label>
+      <label class="f">Number of donors<input type="number" min="0" id="donors"></label>
+      <div class="row">
+        <label class="f">Last updated<input type="date" id="updated"></label>
+        <button class="btn btn-small" id="today" type="button">Today</button>
+      </div>
+    </div>
+    <div class="preview">
+      <strong>Live preview</strong>
+      <div class="bar"><div id="pv-bar"></div></div>
+      <div class="preview-stats">
+        <span id="pv-pct">0%<small>of goal</small></span>
+        <span id="pv-left">$0<small>still needed</small></span>
+        <span id="pv-avg">$0<small>average donation</small></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-events" role="tabpanel" hidden>
+    <h2>Events</h2>
+    <p class="hint">Cards switch from Upcoming to Already Past automatically on the event date.</p>
+    <div id="events-list"></div>
+    <button class="btn btn-add" id="add-event" type="button">+ Add event</button>
+  </section>
+
+  <section class="panel" id="panel-contact" role="tabpanel" hidden>
+    <h2>Contact info</h2>
+    <p class="hint">Shown in the Contact section and the footer.</p>
+    <div class="grid">
+      <label class="f">Email<input type="email" id="c-email"></label>
+      <label class="f">Phone<input type="tel" id="c-phone"></label>
+      <label class="f">Location<input type="text" id="c-location"></label>
+      <label class="f">Office hours<input type="text" id="c-hours"></label>
+      <label class="f wide">Response time<input type="text" id="c-response"></label>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-faq" role="tabpanel" hidden>
+    <h2>FAQ</h2>
+    <p class="hint">Add, edit or remove questions. They show in this order.</p>
+    <div id="faq-list"></div>
+    <button class="btn btn-add" id="add-faq" type="button">+ Add question</button>
+  </section>
+
+  <div class="tools">
+    <span>Data is saved in this browser until a backend exists.</span>
+    <button class="btn btn-small" id="export" type="button">Export backup</button>
+    <button class="btn btn-small" id="import" type="button">Import backup</button>
+    <button class="btn btn-del" id="reset" type="button">Reset to defaults</button>
+    <input type="file" id="file" accept="application/json" hidden>
+    <span>Changes are saved to the server when you click Save.</span>
+  </div>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>
