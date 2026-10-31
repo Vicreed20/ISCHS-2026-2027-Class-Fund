@@ -3,8 +3,8 @@ const { getSite } = require("../db");
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  res.json(getSite());
+router.get("/", async (req, res) => {
+  res.json(await getSite());
 });
 
 module.exports = router;

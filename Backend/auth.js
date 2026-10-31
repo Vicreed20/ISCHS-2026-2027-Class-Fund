@@ -16,28 +16,30 @@ function clear(res) {
 
 // Looks the user up in the database on every request, so deleted users
 // and role changes take effect immediately.
-function loadUser(req) {
+async function loadUser(req) {
   const token = req.cookies && req.cookies[COOKIE];
   if (!token) return null;
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    return db.prepare(
-      "SELECT id, first_name AS firstName, last_name AS lastName, email, role FROM users WHERE id = ?"
-    ).get(payload.id) || null;
+    const user = await db.get(
+      "SELECT id, first_name AS firstName, last_name AS lastName, email, role FROM users WHERE id = ?",
+      [payload.id]
+    );
+    return user || null;
   } catch (e) {
     return null;
   }
 }
 
-function requireLogin(req, res, next) {
-  const user = loadUser(req);
+async function requireLogin(req, res, next) {
+  const user = await loadUser(req);
   if (!user) return res.status(401).json({ error: "Please log in." });
   req.user = user;
   next();
 }
 
-function requireAdmin(req, res, next) {
-  const user = loadUser(req);
+async function requireAdmin(req, res, next) {
+  const user = await loadUser(req);
   if (!user) return res.status(401).json({ error: "Please log in." });
   if (user.role !== "admin") return res.status(403).json({ error: "Admins only." });
   req.user = user;

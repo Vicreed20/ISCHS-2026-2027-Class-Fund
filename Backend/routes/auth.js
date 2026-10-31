@@ -31,22 +31,28 @@ router.post("/signup", limiter, async (req, res) => {
   const { errors, value } = validateSignup(req.body);
   if (errors.length) return res.status(400).json({ error: errors[0], details: errors });
 
-  if (db.prepare("SELECT id FROM users WHERE email = ?").get(value.email)) {
-    return res.status(409).json({ error: "An account with that email already exists." });
+  try {
+    if (await db.get("SELECT id FROM users WHERE email = ?", [value.email])) {
+      return res.status(409).json({ error: "An account with that email already exists." });
+    }
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: "Could not create your account." });
   }
 
   try {
     const hash = await bcrypt.hash(value.password, 12);
     // New accounts are ALWAYS regular users. Role is never read from the request.
-    const info = db.prepare(
-      "INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)"
-    ).run(value.firstName, value.lastName, value.email, hash);
+    const info = await db.run(
+      "INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)",
+      [value.firstName, value.lastName, value.email, hash]
+    );
 
     const user = { id: Number(info.lastInsertRowid), firstName: value.firstName, lastName: value.lastName, email: value.email, role: "user" };
     issue(res, user);
     res.status(201).json({ user: publicUser(user) });
   } catch (e) {
-    if (e.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    if (/UNIQUE/i.test(String(e.message))) {
       return res.status(409).json({ error: "An account with that email already exists." });
     }
     console.error(e);
@@ -64,7 +70,7 @@ router.post("/login", limiter, async (req, res) => {
   }
 
   try {
-    const row = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+    const row = await db.get("SELECT * FROM users WHERE email = ?", [email]);
     const ok = await bcrypt.compare(password, row ? row.password_hash : DUMMY_HASH);
     if (!row || !ok) return res.status(401).json({ error: "Incorrect email or password." });
 

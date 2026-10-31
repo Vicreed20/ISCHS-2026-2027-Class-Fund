@@ -15,6 +15,27 @@ if (
 }
 
 const { loadUser } = require("./auth");
+const { db, ready, logAction } = require("./db");
+
+// Free hosting has no shell, so the admin account is created from environment
+// variables every time the server starts (if it doesn't exist yet).
+async function seedAdmin() {
+  const email = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD || "";
+  if (!email || !password) return;
+  const bcrypt = require("bcryptjs");
+  const existing = await db.get("SELECT id FROM users WHERE email = ?", [email]);
+  if (existing) {
+    await db.run("UPDATE users SET role = 'admin' WHERE id = ?", [existing.id]);
+    return;
+  }
+  await db.run(
+    "INSERT INTO users (first_name, last_name, email, password_hash, role) VALUES (?, ?, ?, ?, 'admin')",
+    [process.env.ADMIN_FIRST_NAME || "Admin", process.env.ADMIN_LAST_NAME || "User", email, bcrypt.hashSync(password, 12)]
+  );
+  await logAction(null, "seed_admin", email);
+  console.log("Admin account created for " + email);
+}
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -57,8 +78,8 @@ app.use("/api/admin", require("./routes/admin"));
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
 // Only admins can even load the admin page (this route must come before express.static)
-app.get("/admin.html", (req, res) => {
-  const user = loadUser(req);
+app.get("/admin.html", async (req, res) => {
+  const user = await loadUser(req);
   if (!user || user.role !== "admin") return res.redirect("/login.html");
   res.sendFile(path.join(PUBLIC, "admin.html"));
 });
@@ -74,6 +95,14 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Something went wrong on the server." });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+ready
+  .then(seedAdmin)
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error("Could not start (check your database settings):", err);
+    process.exit(1);
+  });

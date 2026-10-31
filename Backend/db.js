@@ -1,15 +1,33 @@
-const { DatabaseSync } = require("node:sqlite");
+const { createClient } = require("@libsql/client");
 const path = require("path");
 const fs = require("fs");
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
-fs.mkdirSync(DATA_DIR, { recursive: true });
+// Production: a Turso database (TURSO_DATABASE_URL + TURSO_AUTH_TOKEN).
+// Local development with no Turso settings: a plain SQLite file in Backend/data.
+let url = process.env.TURSO_DATABASE_URL;
+if (!url) {
+  const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  url = "file:" + path.join(DATA_DIR, "ischs.db");
+}
+const client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
 
-const db = new DatabaseSync(path.join(DATA_DIR, "ischs.db"));
-db.exec("PRAGMA journal_mode = WAL");
-db.exec("PRAGMA foreign_keys = ON");
+function plain(result) {
+  return result.rows.map(r => Object.fromEntries(result.columns.map(c => [c, r[c]])));
+}
 
-db.exec(`
+// Small async helpers so the rest of the code stays simple
+const db = {
+  async get(sql, args = []) { return plain(await client.execute({ sql, args }))[0]; },
+  async all(sql, args = []) { return plain(await client.execute({ sql, args })); },
+  async run(sql, args = []) {
+    const r = await client.execute({ sql, args });
+    return { changes: r.rowsAffected, lastInsertRowid: Number(r.lastInsertRowid) };
+  }
+};
+
+// Server waits for this before it starts listening
+const ready = client.executeMultiple(`
   CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     first_name    TEXT NOT NULL,
@@ -58,24 +76,27 @@ function defaultSite() {
   };
 }
 
-function getSite() {
-  const row = db.prepare("SELECT value FROM site_data WHERE key = 'site'").get();
+async function getSite() {
+  const row = await db.get("SELECT value FROM site_data WHERE key = 'site'");
   if (row) {
     try { return JSON.parse(row.value); } catch (e) { /* fall through to defaults */ }
   }
   return defaultSite();
 }
 
-function saveSite(site) {
-  db.prepare(`
-    INSERT INTO site_data (key, value, updated_at) VALUES ('site', ?, datetime('now'))
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-  `).run(JSON.stringify(site));
+async function saveSite(site) {
+  await db.run(
+    `INSERT INTO site_data (key, value, updated_at) VALUES ('site', ?, datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    [JSON.stringify(site)]
+  );
 }
 
-function logAction(user, action, detail = "") {
-  db.prepare("INSERT INTO audit_log (user_id, user_email, action, detail) VALUES (?, ?, ?, ?)")
-    .run(user ? user.id : null, user ? user.email : null, action, detail);
+async function logAction(user, action, detail = "") {
+  await db.run(
+    "INSERT INTO audit_log (user_id, user_email, action, detail) VALUES (?, ?, ?, ?)",
+    [user ? user.id : null, user ? user.email : null, action, detail]
+  );
 }
 
-module.exports = { db, getSite, saveSite, defaultSite, logAction };
+module.exports = { db, ready, getSite, saveSite, defaultSite, logAction };
