@@ -1064,3 +1064,10 @@ footer.site-footer {
    html { scroll-behavior: auto; }
    .site-footer *, .site-footer::before { animation: none !important; transition: none !important; }
 }
+
+/* Lets the page hide contact items the admin leaves blank */
+.contact-card[hidden],
+.contact-cta[hidden],
+.footer-col li[hidden] {
+   display: none !important;
+}

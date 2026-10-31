@@ -374,7 +374,7 @@ setInterval(renderEvents, 60 * 60 * 1000);   // re-check hourly so a page left o
 /* =========================================================
    FAQ
    ========================================================= */
-const questions = document.querySelectorAll(".faq-question");
+let questions = [];
 
 function setOpen(btn, open) {
    const answer = document.getElementById(btn.getAttribute("aria-controls"));
@@ -382,16 +382,19 @@ function setOpen(btn, open) {
    answer.classList.toggle("open", open);
 }
 
-questions.forEach(btn => {
-   btn.addEventListener("click", () => {
-      const willOpen = btn.getAttribute("aria-expanded") !== "true";
-      questions.forEach(other => setOpen(other, false));   // one open at a time
-      setOpen(btn, willOpen);
+function bindFaq() {
+   questions = document.querySelectorAll(".faq-question");
+   questions.forEach(btn => {
+      btn.addEventListener("click", () => {
+         const willOpen = btn.getAttribute("aria-expanded") !== "true";
+         questions.forEach(other => setOpen(other, false));   // one open at a time
+         setOpen(btn, willOpen);
+      });
    });
-});
-
-// Open the first question by default
-if (questions[0]) setOpen(questions[0], true);
+   // Open the first question by default
+   if (questions[0]) setOpen(questions[0], true);
+}
+bindFaq(); 
 
 /* =========================================================
    FOOTER
@@ -402,6 +405,119 @@ document.getElementById("footer-year").textContent = new Date().getFullYear();
    LOAD LIVE DATA FROM THE SERVER
    Keep this at the very bottom so everything above exists.
    ========================================================= */
+
+// Turns plain text into DOM nodes, making email addresses clickable
+function appendLinkified(parent, text) {
+   const re = /[^\s@]+@[^\s@]+\.[^\s@.,;:!?)]+/g;
+   let last = 0, m;
+   while ((m = re.exec(text)) !== null) {
+      if (m.index > last) parent.append(text.slice(last, m.index));
+      const a = document.createElement("a");
+      a.href = "mailto:" + m[0];
+      a.textContent = m[0];
+      parent.append(a);
+      last = m.index + m[0].length;
+   }
+   if (last < text.length) parent.append(text.slice(last));
+}
+
+function renderFaq(items) {
+   const wrap = document.getElementById("faq");
+   if (!wrap) return;
+   wrap.replaceChildren();
+   items.forEach((item, i) => {
+      const n = i + 1;
+      const box = document.createElement("div");
+      box.className = "faq-item";
+
+      const h3 = document.createElement("h3");
+      const btn = document.createElement("button");
+      btn.className = "faq-question";
+      btn.type = "button";
+      btn.setAttribute("aria-expanded", "false");
+      btn.setAttribute("aria-controls", "faq-a" + n);
+      btn.id = "faq-q" + n;
+      btn.append(item.q || "");
+      const icon = document.createElement("span");
+      icon.className = "faq-icon";
+      icon.setAttribute("aria-hidden", "true");
+      btn.append(icon);
+      h3.append(btn);
+
+      const answer = document.createElement("div");
+      answer.className = "faq-answer";
+      answer.id = "faq-a" + n;
+      answer.setAttribute("role", "region");
+      answer.setAttribute("aria-labelledby", "faq-q" + n);
+      const inner = document.createElement("div");
+      inner.className = "faq-answer-inner";
+      String(item.a || "").split(/\n\s*\n/).forEach(para => {
+         if (!para.trim()) return;
+         const p = document.createElement("p");
+         appendLinkified(p, para.trim());
+         inner.append(p);
+      });
+      answer.append(inner);
+
+      box.append(h3, answer);
+      wrap.append(box);
+   });
+   bindFaq();
+}
+
+function renderContact(c) {
+   const email = (c.email || "").trim();
+   const phone = (c.phone || "").trim();
+   const response = (c.response || "").trim();
+   const location = (c.location || "").trim();
+   const hours = (c.hours || "").trim();
+   const phoneDigits = phone.replace(/[^\d+]/g, "");
+
+   // Contact cards
+   $("contact-email-card").hidden = !email;
+   $("contact-email-card").href = "mailto:" + email;
+   $("contact-email-text").textContent = email;
+
+   $("contact-phone-card").hidden = !phone;
+   $("contact-phone-card").href = "tel:" + phoneDigits;
+   $("contact-phone-text").textContent = phone;
+
+   $("contact-response-card").hidden = !response;
+   $("contact-response-text").textContent = response;
+
+   $("contact-cta").hidden = !email;
+   $("contact-cta").href = "mailto:" + email + "?subject=Question%20about%20Senior%20Funds";
+
+   // Footer
+   const setItem = (id, value, build) => {
+      const li = $(id);
+      li.hidden = !value;
+      li.replaceChildren(build(value));
+   };
+   setItem("footer-email-item", email, v => {
+      const a = document.createElement("a");
+      a.href = "mailto:" + v;
+      a.textContent = "✉️ " + v;
+      return a;
+   });
+   setItem("footer-phone-item", phone, v => {
+      const a = document.createElement("a");
+      a.href = "tel:" + phoneDigits;
+      a.textContent = "📞 " + v;
+      return a;
+   });
+   setItem("footer-location-item", location, v => {
+      const sp = document.createElement("span");
+      sp.textContent = "📍 " + v;
+      return sp;
+   });
+   setItem("footer-hours-item", hours, v => {
+      const sp = document.createElement("span");
+      sp.textContent = "🕒 " + v;
+      return sp;
+   });
+}
+
 async function loadSiteData() {
    try {
       const res = await fetch("/api/site");
@@ -417,8 +533,14 @@ async function loadSiteData() {
          EVENTS.push(...site.events);
          renderEvents();
       }
+      if (site && site.contact && typeof site.contact === "object") {
+         renderContact(site.contact);
+      }
+      if (site && Array.isArray(site.faq)) {
+         renderFaq(site.faq);
+      }
    } catch (e) {
       // Server not running or page opened as a file: keep the placeholders above
    }
 }
-loadSiteData();
+loadSiteData();   
