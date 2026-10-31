@@ -18,7 +18,7 @@ const { loadUser } = require("./auth");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const PUBLIC = path.join(__dirname, "public");
+const PUBLIC = path.join(__dirname, "..", "docs");
 const isProd = process.env.NODE_ENV === "production";
 
 // Needed when deployed behind a host's HTTPS proxy so cookies and rate limits work
