@@ -184,7 +184,7 @@ function renderEvents() {
       field("Time", ev.time, v => ev.time = v),
       field("Location", ev.location, v => ev.location = v),
       field("Emoji", ev.emoji, v => ev.emoji = v),
-      field("Image path (optional)", ev.image, v => ev.image = v),
+      imageField(ev),
       field("Description", ev.description, v => ev.description = v, { textarea: true, wide: true })
     );
 
