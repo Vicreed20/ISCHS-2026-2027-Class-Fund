@@ -134,6 +134,67 @@ function parseDate(s) {
   return new Date(y, m - 1, d);
 }
 
+/* ---------- Image upload field ---------- */
+function resizeImage(file, maxSize = 800, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read that image")); };
+    img.src = url;
+  });
+}
+
+function imageField(ev) {
+  const wrap = document.createElement("div");
+  wrap.className = "f wide";
+  wrap.append("Image");
+
+  const preview = document.createElement("img");
+  preview.alt = "";
+  preview.style.cssText = "display:block;max-width:200px;max-height:140px;margin:6px 0;border-radius:8px;";
+  const showPreview = () => {
+    preview.src = ev.image || "";
+    preview.style.display = ev.image ? "block" : "none";
+  };
+  showPreview();
+
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    input.value = "";
+    if (!file) return;
+    try {
+      ev.image = await resizeImage(file);
+      showPreview();
+      removeBtn.hidden = false;
+      setDirty(true);
+    } catch (err) {
+      toast(err.message, 4000);
+    }
+  });
+
+  const removeBtn = delBtn("Remove image", () => {
+    ev.image = "";
+    showPreview();
+    removeBtn.hidden = true;
+    setDirty(true);
+  });
+  removeBtn.hidden = !ev.image;
+
+  wrap.append(preview, input, removeBtn);
+  return wrap;
+}
 /* ---------- Events ---------- */
 function renderEvents() {
   const list = $("events-list");
