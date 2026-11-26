@@ -135,19 +135,37 @@ function parseDate(s) {
 }
 
 /* ---------- Image upload field ---------- */
-function resizeImage(file, maxSize = 800, quality = 0.8) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/jpeg", quality));
-    };
+async function resizeImage(file, maxSize = 800, quality = 0.8) {
+  let source;
+
+  try {
+    source = await createImageBitmap(file);
+  } catch (e) {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error("Couldn't read that image"));
+      r.readAsDataURL(file);
+    });
+    source = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Couldn't read that image"));
+      img.src = dataUrl;
+    });
+  }
+
+  const scale = Math.min(1, maxSize / Math.max(source.width, source.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(source.width * scale);
+  canvas.height = Math.round(source.height * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  if (source.close) source.close();
+  return canvas.toDataURL("image/jpeg", quality);
+}
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read that image")); };
     img.src = url;
   });
