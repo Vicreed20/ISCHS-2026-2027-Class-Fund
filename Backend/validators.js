@@ -80,8 +80,19 @@ function validateSite(input) {
     const n = `Event ${i + 1}`;
     const e = ev && typeof ev === "object" ? ev : {};
     const date = str(e.date, 10, `${n} date`, errors, true);
-    if (date && !isRealDate(date)) errors.push(`${n} date must be a valid date.`);
-    const image = str(e.image, 300, `${n} image`, errors);
+        let image = "";
+    if (e.image !== undefined && e.image !== null && e.image !== "") {
+      if (typeof e.image !== "string") {
+        errors.push(`${n} image must be text.`);
+      } else if (e.image.startsWith("data:image/jpeg;base64,") || e.image.startsWith("data:image/png;base64,")) {
+        if (e.image.length > 700000) errors.push(`${n} image is too large.`);
+        else image = e.image;
+      } else if (e.image.length <= 300 && IMAGE_RE.test(e.image)) {
+        image = e.image;
+      } else {
+        errors.push(`${n} image must be an uploaded picture, a file path or an http(s) link.`);
+      }
+    }
     if (image && !IMAGE_RE.test(image)) errors.push(`${n} image must be a file path or an http(s) link.`);
     return {
       title: str(e.title, 100, `${n} title`, errors, true),
