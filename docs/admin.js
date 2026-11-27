@@ -166,10 +166,6 @@ async function resizeImage(file, maxSize = 800, quality = 0.8) {
   if (source.close) source.close();
   return canvas.toDataURL("image/jpeg", quality);
 }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read that image")); };
-    img.src = url;
-  });
-}
 
 function imageField(ev) {
   const wrap = document.createElement("div");
