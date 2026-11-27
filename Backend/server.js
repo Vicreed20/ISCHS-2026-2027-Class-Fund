@@ -63,7 +63,7 @@ app.use(helmet({
   }
 }));
 
-app.use(express.json({ limit: "300kb" }));
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
 // API responses should never be cached
