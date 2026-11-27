@@ -93,7 +93,7 @@ function validateSite(input) {
         errors.push(`${n} image must be an uploaded picture, a file path or an http(s) link.`);
       }
     }
-    if (image && !IMAGE_RE.test(image)) errors.push(`${n} image must be a file path or an http(s) link.`);
+        if (date && !isRealDate(date)) errors.push(`${n} date must be a valid date.`);
     return {
       title: str(e.title, 100, `${n} title`, errors, true),
       date,
