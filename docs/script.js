@@ -341,12 +341,15 @@ function renderEvents() {
          // Banner
          const banner = el("div", "event-banner");
          if (ev.image) {
-            banner.style.background = `url("${encodeURI(ev.image)}") center / cover no-repeat`;
+            const img = document.createElement("img");
+            img.className = "event-img";
+            img.src = ev.image;
+            img.alt = ev.title || "Event picture";
+            img.loading = "lazy";
+            banner.append(img);
          } else {
             banner.append(el("span", "event-emoji", ev.emoji || "🎉"));
          }
-         banner.append(el("span", "event-status", isPast ? "Already Past" : "Upcoming"));
-
          const chip = el("div", "event-date");
          chip.append(el("span", "month", MONTHS[eventDate.getMonth()]));
          chip.append(el("span", "day", eventDate.getDate()));
